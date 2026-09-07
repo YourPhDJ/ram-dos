@@ -1,0 +1,609 @@
+<title>RAM-DOS Green Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --void:#040604;
+    --screen:#0a120a;
+    --ink:#4dff88;
+    --ink-dim:#2d8a52;
+    --accent:#7bff9e;
+    --on-accent:#04140a;
+    --line:#1d3d26;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'VT323', ui-monospace, monospace;
+    display:flex;
+    justify-content:center;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay;
+    opacity:0.5;
+  }
+
+  .page{
+    width:100%; max-width:520px;
+    padding:4.5rem 1.25rem 2.5rem;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    min-height:100vh;
+    position:relative;
+  }
+
+  .eye{
+    width:96px; height:auto; color:var(--ink); margin-bottom:1rem;
+    opacity:0.9;
+    transform-origin:50% 44%;
+    animation:eye-blink 6s ease-in-out infinite;
+  }
+  .eye .outline{fill:none; stroke:currentColor; stroke-width:3;}
+  .eye .iris{fill:none; stroke:currentColor; stroke-width:2.5;}
+  .eye .pupil{fill:currentColor;}
+  .eye .rays line{stroke:currentColor; stroke-width:2; opacity:0.6;}
+  @keyframes eye-blink{
+    0%, 92%, 100%{ transform:scaleY(1); }
+    94%{ transform:scaleY(0.06); }
+    96%{ transform:scaleY(1); }
+  }
+
+  h1{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:clamp(2rem, 7vw, 2.6rem);
+    margin:0;
+    letter-spacing:0.02em;
+    color:var(--ink);
+    text-shadow:0 0 3px rgba(77,255,136,0.4);
+  }
+  .cursor-inline{ display:inline-block; width:0.5em; background:var(--ink); animation:blink 1s steps(1) infinite; }
+  @keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+  @media (prefers-reduced-motion: reduce){ .cursor-inline{animation:none;} .eye{animation:none;} }
+
+  .tagline{
+    font-family:'VT323', monospace;
+    font-size:1.15rem;
+    letter-spacing:0.1em;
+    color:var(--ink-dim);
+    margin:0.3rem 0 2.4rem;
+    text-transform:uppercase;
+  }
+
+  .search-bar{
+    width:100%; max-width:440px;
+    font-family:'Space Mono', monospace;
+    font-size:0.9rem;
+    background:var(--screen);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:0.85rem 1.2rem;
+    color:var(--ink);
+    text-align:left;
+  }
+  .search-bar::placeholder{color:var(--ink-dim);}
+  .search-bar:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .btn-row{ display:flex; gap:0.7rem; flex-wrap:wrap; justify-content:center; margin:1.4rem 0 2.2rem; }
+  .btn-flat{
+    font-family:'Space Mono', monospace;
+    font-size:0.76rem;
+    font-weight:700;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    padding:0.65rem 1.3rem;
+    border-radius:2px;
+    background:transparent;
+    border:1px solid var(--ink-dim);
+    color:var(--ink);
+    cursor:pointer;
+    transition:background 0.12s ease, transform 0.12s ease;
+  }
+  .btn-flat:hover{ background:rgba(77,255,136,0.08); border-color:var(--ink); }
+  .btn-flat:active{ transform:translateY(1px); }
+  .btn-flat.primary{ color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
+  .btn-flat.primary:hover{ background:var(--ink); }
+  .btn-flat:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-flat:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .output{
+    width:100%; max-width:480px;
+    min-height:2.4rem;
+    display:flex; align-items:center; justify-content:center;
+    padding:0 0.5rem;
+  }
+  .output p{ margin:0; font-family:'Space Mono', monospace; font-size:0.92rem; line-height:1.65; color:var(--ink); text-align:center; }
+  .output.pending p{ color:var(--ink-dim); font-style:italic; }
+  @keyframes flash{from{opacity:0.25;}to{opacity:1;}}
+  .output.flash p{animation:flash 0.25s ease-out;}
+
+  .spacer{ flex:1; min-height:2rem; }
+  .footer-mini{ text-align:center; max-width:44ch; }
+  .about-toggle{
+    font-family:'Space Mono', monospace;
+    font-size:0.64rem;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    background:none;
+    border:none;
+    color:var(--ink-dim);
+    opacity:0.75;
+    cursor:pointer;
+    padding:0.2rem 0.4rem;
+  }
+  .about-toggle:hover{ opacity:1; color:var(--accent); }
+  .about-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .footer-mini p{ margin:0.6rem 0 0; font-family:'Space Mono', monospace; font-size:0.62rem; line-height:1.5; color:var(--ink-dim); opacity:0.85; }
+</style>
+
+<div class="page">
+  <svg class="eye" viewBox="0 0 200 160" role="img" aria-label="A simple line-drawn eye, watching, monochrome">
+    <g class="rays">
+      <line x1="100" y1="6" x2="100" y2="20"/>
+      <line x1="30" y1="30" x2="42" y2="40"/>
+      <line x1="170" y1="30" x2="158" y2="40"/>
+    </g>
+    <path class="outline" d="M14,70 C14,70 58,26 100,26 C142,26 186,70 186,70 C186,70 142,114 100,114 C58,114 14,70 14,70 Z"/>
+    <circle class="iris" cx="100" cy="70" r="26"/>
+    <circle class="pupil" cx="100" cy="70" r="9"/>
+  </svg>
+
+  <h1>RAM-DOS<span class="cursor-inline">&nbsp;</span></h1>
+  <p class="tagline">third eye subsystem</p>
+
+  <input id="askInput" type="text" class="search-bar" maxlength="140" placeholder="ask the guru anything (optional)" />
+
+  <div class="btn-row">
+    <button id="generateBtn" class="btn-flat primary">Generate Wisdom</button>
+    <button id="askBtn" class="btn-flat">Ask the Guru</button>
+  </div>
+
+  <div class="output" id="output">
+    <p id="outputText">Your wisdom will appear here.</p>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="footer-mini">
+    <button type="button" id="aboutToggle" class="about-toggle" aria-expanded="false" aria-controls="aboutText">&#9432; About</button>
+    <p id="aboutText" hidden>RAM-DOS is independent parody, unaffiliated with the real Ram Dass or the Love Serve Remember Foundation. No gurus were consulted.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var wisdomLines = [
+    "You are not stuck in traffic. You are the traffic. The traffic is you. You are still going to be late.",
+    "The soul does not require a parking spot. And yet, here you are, circling the block for the ninth time.",
+    "Suffering is just the ego asking for a group chat to be muted.",
+    "Be here now. Unless now is Monday. Then be wherever helps.",
+    "Your Wi-Fi password is impermanent. So is your Wi-Fi. So, dear one, are you.",
+    "Let go of the remote control. Someone else will find it first. That is also the teaching.",
+    "The universe sends no notifications. You installed those yourself, at 2 a.m., for reasons.",
+    "Everyone you meet is God in a rental car, running fourteen minutes late and blaming traffic.",
+    "Loving awareness does not care about your group project. Loving awareness never did the reading either.",
+    "The present moment is free. Everything else is a subscription, auto-renewing, forever.",
+    "You cannot pour from an empty cup. You can, however, microwave it too long and blame the universe for your tongue.",
+    "The ego wants a receipt for everything, even enlightenment. Especially enlightenment. It is very particular about returns.",
+    "There is no spoon. There is, however, a sink full of dishes, and it is also you.",
+    "Somewhere, right now, someone is simply breathing. That is enough content for one lifetime.",
+    "Karma is a group project where nobody opened the shared document.",
+    "Quiet the mind and the heart will speak. Loudly. Mostly about snacks.",
+    "You are the sky, not the weather. Bring a jacket anyway. The sky knows nothing about wind chill.",
+    "Nothing is permanent, including this sentence, including your gym membership, including the gym.",
+    "The path to enlightenment now offers a free trial. Cancel anytime. You will forget to.",
+    "We are all just walking each other home, badly, via an app that recalculates every four seconds.",
+    "The mountain does not ask for your itinerary. Neither should you.",
+    "Attachment is wanting the story to end differently than it already ended fourteen minutes ago.",
+    "Your inbox is not the universe. It only feels that way between the hours of nine and five, forever.",
+    "Meditation is just sitting quietly until your to-do list gets bored and leaves the room.",
+    "The ocean does not compare itself to other oceans. The ocean, frankly, has never heard of LinkedIn.",
+    "You are a divine being having a human experience, and the human experience currently needs to pee.",
+    "The teacher appears when the student is ready. The Wi-Fi appears when it feels like it.",
+    "Impermanence means even this terrible mood is, technically, a limited-time offer.",
+    "Peace begins the moment you stop refreshing the page. The page was never going to load anyway.",
+    "You are not your thoughts. You are the one mildly annoyed by your thoughts. Sit with that.",
+    "The universe is unfolding exactly as it should, which explains a great deal, unfortunately.",
+    "Forgiveness is realizing you already rewatched that argument in your head eleven times, for free.",
+    "Every ending is a beginning. Every beginning is, statistically, also going to have a middle you dread.",
+    "The witness within you does not judge. It just quietly screenshots everything for later.",
+    "Ram Dass never had a phone that buzzed during silent meditation. You have three. Be gentle with yourself.",
+    "Enlightenment is not a destination. It is also, unfortunately, not validated parking.",
+    "Your suffering is just the universe asking you to unsubscribe from suffering.",
+    "If you're broke, congratulations: you've been spiritually released from attachment to money.",
+    "Your boundaries are blocking your blessings.",
+    "Don't worry about your problems. They're only real if you give them energy.",
+    "If someone treats you terribly, thank them for being your karmic intern.",
+    "You don't need justice. You need a higher vibration.",
+    "Your burnout is simply your soul requesting a more entrepreneurial approach to rest.",
+    "If your manifestation hasn't arrived, you're obviously manifesting the wrong manifestation.",
+    "The universe didn't say no. It said, ‘Have you tried being less specific?’",
+    "Your trauma is just your inner child trying to become your outer adult.",
+    "Don't ask why this happened to you. Ask what expensive crystal can teach you why.",
+    "You are exactly where you need to be, especially if where you are is completely unacceptable.",
+    "Your negative feelings are just positive feelings wearing a fake mustache.",
+    "Release your attachment to outcomes, preferably immediately after purchasing my six-week course on achieving your outcomes.",
+    "Everything is divine timing. Some divine timing just has a surprisingly long waiting period.",
+    "If you keep attracting narcissists, perhaps your aura is offering competitive pricing.",
+    "If the universe closes a door, it probably means you were trying to enter a room you didn't manifest hard enough to deserve.",
+    "Everything happens for a reason — usually because your third chakra is misaligned and you forgot to forgive your landlord.",
+    "The obstacle is the way, but if the obstacle is a swarm of killer hornets, the way is running very fast and questioning your karma.",
+    "There are no mistakes, only spontaneous lessons in humility delivered by the cosmos.",
+    "If a tree falls in a forest and no one is around to hear it, it's probably because you aren't projecting enough mindfulness into the timber industry.",
+    "To find yourself, you must first lose everyone else's phone number and block them on LinkedIn.",
+    "Be like water — unless it's freezing, boiling, or you're currently drowning, in which case, try being more like a floating log.",
+    "Your vibe attracts your tribe, which is why you're currently surrounded by stray raccoons and guys who want to talk about crypto.",
+    "Trust the journey, even if the journey is currently looping through a Wendy's drive-thru at 3:00 a.m. because you lack inner peace.",
+    "Pain is just weakness leaving the body, or wisdom entering the soul, or a sprained ankle. It's roughly 33% odds for each.",
+    "Breathe in the good shanti, breathe out the bad shanti, and ignore the smoke coming from the toaster.",
+    "Surrender control to the divine, but make sure you still check your bank statements, because God helps those who audit their own savings.",
+    "If you're feeling down, just remember: you are made of stardust, which means you are technically a cosmic dumpster fire that managed to ignite.",
+    "The energy you put out into the universe always returns threefold — which explains why that one angry email you sent in 2018 is currently manifesting as a minor plumbing emergency.",
+    "Don't force the timing of the universe. Let it unfold naturally, even if it unfolds right past your deadline and straight into bankruptcy.",
+    "Your soul chose this exact lifetime of suffering, student debt, and minor inconveniences as a fun little spiritual boot camp.",
+    "True enlightenment cannot be rushed, bought, or attained through less than four thousand dollars in weekend seminar fees.",
+    "Listen to your intuition. If your intuition says ‘eat another slice of cake,’ that's your higher self talking. If it says ‘maybe you should text your ex,’ that's just trapped gas.",
+    "Open your third eye, but keep sunglasses handy, because astral plane glare is a real hazard.",
+    "We are all spiritual beings having a human experience, which mostly just means we're ghosts trapped in fragile meat-suits looking for the Wi-Fi password.",
+    "If you visualize wealth hard enough, the universe will provide — though the universe's definition of ‘providing’ might just be a scratched lottery ticket on the sidewalk.",
+    "You can't pour from an empty cup, but if you fill your cup entirely with overpriced matcha and denial, you can at least jitter your way to nirvana.",
+    "Alignment isn't about comfort; it's about waking up at 4:30 a.m. to scream affirmations at a houseplant until you feel superior to your neighbors.",
+    "Everything is temporary. Except for the negative energetic residue of that bad haircut you got in 2021. That's etched into your aura forever.",
+    "Your chakras are not misaligned. Your chakras are simply on someone else's business hours.",
+    "The universe sent you a sign already. It was the string of green lights on your commute. You ran a red anyway.",
+    "Grounding yourself means standing barefoot in grass for ten minutes, or accepting that the group chat will never apologize. Either works.",
+    "Your higher self has excellent boundaries and a six-figure coaching package to teach you hers.",
+    "The moon is in retrograde. So, coincidentally, is your motivation, your group project, and your group project partner.",
+    "You attract what you fear, which explains the group project partner, the retrograde, and this sentence.",
+    "Ancestral healing takes generations. Your group chat apology will take considerably longer.",
+    "Set the intention. Light the candle. Ignore the smoke alarm — it, too, is manifesting.",
+    "Your abundance mindset and your checking account remain, tragically, in different timelines.",
+    "The astrology app said Mercury is in retrograde. The astrology app also wants $9.99 a month for that information.",
+    "Journaling releases what no longer serves you. Screenshotting the group chat serves you forever.",
+    "Your inner goddess does not do her own laundry either.",
+    "Cutting energetic cords with toxic people is free. Cutting the actual cord to their Wi-Fi is more effective.",
+    "The retreat promises transformation in just one long weekend and four easy payments.",
+    "Somewhere, a life coach is calling your rent a ‘growth opportunity.’ Do not hire that life coach.",
+    "Sage the room. Sage the car. Sage will not, unfortunately, sage the group chat.",
+    "The full moon is not responsible for your mood. The seven energy drinks are.",
+    "Ayahuasca did not tell you to start a podcast. That was still you.",
+    "Your sound bath healer takes Venmo, which is itself a kind of vibration.",
+    "The tarot said change is coming. The tarot did not specify it would be a 40% rent increase.",
+    "You don't need a life purpose. You need eight hours of sleep and to stop checking your ex's Strava.",
+    "Manifesting a soulmate works the same way manifesting a parking spot does: badly, and mostly by accident.",
+    "Your inner critic is just your outer landlord, internalized.",
+    "The retrograde is not why you missed the deadline. Mercury has never once opened your calendar.",
+    "Somewhere, a $12 smoothie is calling itself self-care. It is, in fact, a smoothie.",
+    "Your NFT of a monkey was never going to unlock your third eye. It has, however, unlocked some very specific regret.",
+    "The universe rewards those who take action, and also those who buy the $400 planner about taking action.",
+    "You are not lazy. You are conserving energy for a spiritual awakening that keeps getting rescheduled.",
+    "Your crystals are not charging under the full moon. They are, however, collecting dust under the full moon.",
+    "The wellness influencer selling you inner peace has, notably, never once turned off her phone.",
+    "Namaste means ‘the light in me sees the light in you.’ It does not mean ‘I will Venmo-request you for this workshop.’",
+    "Your aura is fine. Your posture, after six hours at that desk, is a genuine spiritual emergency.",
+    "The universe has a plan for you. The plan is currently buffering, much like everything else today.",
+    "Detox teas do not release toxins. They release you, repeatedly, to the bathroom, which is its own kind of letting go.",
+    "Procrastination isn't laziness; it's a sacred honoring of divine timing, mostly because you're waiting for the planets to align in a way that excuses you from doing your laundry.",
+    "If you feel lost, remember that getting lost is just the soul's way of telling you that Google Maps is interfering with your destiny.",
+    "Don't sweat the small stuff, and remember that everything — including your tax audit, your broken dishwasher, and the end of civilization — is technically just small stuff in the grand scheme of eternity.",
+    "When life gives you lemons, don't make lemonade. Instead, cleanse them in a bowl of pink Himalayan salt under a full moon and let them rot as an offering to the chaos gods.",
+    "True abundance flows effortlessly to those who stop trying so hard and instead spend eight hours a day staring blankly at a quartz crystal while hoping money falls from the ceiling.",
+    "Your inner child wants to play, but your inner adult has bills to pay. Let them fight it out in the astral realm while you take a nap.",
+    "Surrender to the flow of the river of life, even if the river is currently a flash flood heading straight toward a waterfall made of disappointment.",
+    "Be grateful for closed doors. They are the universe's polite way of saying, ‘Please stop trying to break into this Target after hours.’",
+    "Karma is a boomerang, but sometimes the boomerang gets stuck in a tree, which explains why bad people keep winning and you're stuck paying for everyone else's spiritual evolution.",
+    "Every challenge is a gift wrapped in ugly wrapping paper. Sometimes that wrapping paper is a raging migraine, and sometimes it's just a guy trying to explain cryptocurrency at a dinner party.",
+    "Inner peace is priceless, but you can rent it for $49.99 a month through a guided meditation app that occasionally freezes right before the relaxation music kicks in.",
+    "Trust your gut instinct. If your gut says ‘run,’ it might be danger. Or it might just be that sketchy sushi you ate. The universe works in mysterious, gastrointestinal ways.",
+    "You can't rush inner peace, which is great, because your inner peace has been missing since 2014 and shows no signs of wanting to return.",
+    "Forgive your enemies, release your past, and if that doesn't work, subtly unfollow them on all social media platforms while visualizing a protective shield of pure white light.",
+    "The universe is an infinite mirror, which means every time someone cuts you off in traffic, they are actually just reflecting your deepest, most repressed desire to ram a Honda Civic into a guardrail.",
+    "Let go of attachment to outcomes. Your only job is to plant the seed of intention, water it with high vibes, and completely detach from whether it grows into a majestic oak tree or a sad, dying houseplant.",
+    "It's not a bad decision; it's a profound shadow-work assignment that you accidentally assigned yourself at 2:00 a.m. while doom-scrolling.",
+    "If someone points out your toxic behavior, simply remind them that mirror work is hard and their lack of patience is interfering with your ascension.",
+    "Don't label your emotions as ‘stressed’ or ‘panicked.’ Reframe them as ‘high-frequency sensory overload caused by an overactive third eye.’",
+    "You are exactly where you need to be. Granted, where you need to be is lost in a Home Depot parking lot looking for your keys, but the cosmos demands it.",
+    "Your past lives explain a lot — like why you're afraid of commitment, why you hate small talk, and why you feel a sudden, inexplicable urge to buy $300 worth of sage whenever you feel mildly inconvenienced.",
+    "Synchronicity is everywhere if you're delusional enough to look for it. Seeing the number 444 isn't just a random coincidence; it's a direct message from the angels telling you to buy another scented candle.",
+    "Breathe in clarity, breathe out doubt, and remember that nothing matters on a geological timescale, so you might as well eat the entire batch of cookie dough.",
+    "True manifestation requires radical belief. If you truly believe you are a billionaire, the bank teller will eventually have to respect your sovereign aura and hand over the cash.",
+    "Your spirit animal is not a wolf. Your spirit animal is a raccoon that found an unattended sandwich and does not regret it.",
+    "The algorithm is not conspiring against you. The algorithm simply noticed you watched fourteen crystal-healing videos in a row.",
+    "Cutting cords with toxic people requires ceremony, sage, and, ideally, changing your phone number.",
+    "Your ego did not die. Your ego is currently just resting, the way it does every time you say ‘I'm working on myself.’",
+    "Vision boards work. So does a calendar. One of them is mostly glitter.",
+    "You do not need to hold space for people who would not hold a door.",
+    "Somatic healing means your body keeps the score. Your body would also like you to stretch occasionally.",
+    "Regulate your nervous system. Your nervous system would also accept a nap and slightly fewer emails.",
+    "You are not ‘manifesting a slow morning.’ You are, in fact, running late.",
+    "The container for this healing work is sacred, and also $850, and also does not include snacks.",
+    "Quantum jumping to a parallel universe where you replied to that text sooner is, unfortunately, not covered by your current plan.",
+    "Your gratitude journal has three entries. Two are about coffee. This, too, is growth.",
+    "Toxic positivity says everything happens for a reason. Grief says: no, actually, sometimes it just happens.",
+    "Hustle culture rebranded itself as ‘high vibrational discipline,’ and somehow, everyone bought it, including you.",
+    "Setting an intention for the day is free. Doing the thing you set an intention about remains, as ever, extra.",
+    "Your yoga pants are aligned with your chakras. Your actual schedule remains aligned with nothing.",
+    "The full moon ritual calls for release, reflection, and a candle you will forget is lit.",
+    "Being ‘triggered’ and being ‘mildly annoyed at brunch’ are, spiritually speaking, distinct categories. Know the difference.",
+    "You are in a season of growth. You have, in fact, been in this exact season for four years.",
+    "Held space is important. So is a chair. Bring your own chair.",
+    "Everything happens for a reason, and that reason is usually that you ignored every single red flag because you wanted to practice radical acceptance.",
+    "The universe is testing you, not because you're special, but because the cosmic algorithm likes to re-run the same glitchy simulation until you finally learn to turn your phone off.",
+    "True wealth is measured in peace of mind, which is convenient, because your bank account is currently measuring a flatlining pulse.",
+    "Surrender to the mystery, mostly because trying to figure out what you're doing with your life is giving your guardian angel a migraine.",
+    "Cleanse your space of low-vibe clutter by throwing away all your bills, your responsibilities, and three years of unwashed yoga mats.",
+    "You are a divine masterpiece, which means you're allowed to be completely dysfunctional, overpriced, and kept behind velvet ropes in a museum no one visits.",
+    "Listen closely to the whispers of your soul. If your soul is whispering ‘eat pizza in bed and cry,’ that's just ancestral wisdom talking.",
+    "Manifesting your dream life is easy: just close your eyes, picture what you want, and wait for a wealthy stranger to mistake you for their long-lost heir.",
+    "Don't let society's timeline dictate your life. If society says you should have your career figured out by 30, just remind them that linear time is an illusion fabricated by the clock industry.",
+    "Your vibe speaks so loudly that people can hear it before you even walk in the room — which explains why stray cats and weird guys handing flyers always find you first.",
+    "Embrace your flaws as quirky little signature moves from your higher self, like chronic lateness or an inability to process emotional feedback.",
+    "Remember that you are a sacred vessel of light. A fragile, leaky, deeply chaotic vessel of light, but light nonetheless.",
+    "You aren't procrastinating; you're letting your dreams steep in the cosmic tea bag until they reach optimal spiritual potency.",
+    "If life throws you a curveball, just step out of the batter's box, sit in the dirt, and declare that the game is a low-vibe social construct anyway.",
+    "Don't stress about the future. The future hasn't even figured out how to disappoint you yet, so let it unfold at its own leisurely, disorganized pace.",
+    "Your soul wanted a challenge this lifetime, which explains why you keep losing your phone while it's actively in your hand.",
+    "Peace isn't the absence of chaos; it's the ability to sit calmly in a burning room while whispering, ‘This is fine, everything is just burning away my negative karma.’",
+    "True manifestation requires alignment, intention, and a willingness to completely ignore all practical financial advice from certified professionals.",
+    "When people misunderstand you, don't explain yourself. Just smile serenely, tilt your head like a confused golden retriever, and let them assume you're operating on a higher plane.",
+    "Your chakras aren't blocked; they're just taking an extended smoke break because they're tired of watching you make the same choices.",
+    "Fill your emotional tank with high vibrations, premium gratitude, and whatever cheap snack is closest to the register.",
+    "The universe has a plan for you. Unfortunately, that plan looks like it was drawn up by a raccoon using a crayon in the dark, but you just have to trust it.",
+    "Let go of what no longer serves you — like your budget, your sleep schedule, and your unrealistic expectation of ever feeling well-rested.",
+    "You are a spark of the divine infinite. A chaotic, slightly burnt-out spark that really needs to drink a glass of water, but divine nonetheless.",
+    "If your life feels like a complete disaster, just reframe it as a radical deconstruction of your earthly identity to make room for your inner starseed.",
+    "Don't chase success. Sit entirely still in a dark room and wait for success to get tired of hiding and awkwardly wander into your living room.",
+    "Your intuition is always right, except when it tells you to send that text, buy that crystal online at 3:00 a.m., or eat gas station sushi. Those times are just spicy tests of faith.",
+    "True freedom is realizing that none of your actions have any cosmic consequences because we are all just tiny, insignificant specks of dust riding a spinning rock into the void.",
+    "If someone cuts you off in traffic, don't get angry. Send them a wave of white light, or better yet, visualize their tires gently losing traction in a non-fatal, character-building sort of way.",
+    "Your energy is your currency, which means you've been completely bankrupt since Tuesday and your energetic credit score is in absolute shambles.",
+    "Let go of the illusion of control. The steering wheel of your life isn't even connected to anything; you're just gripping it tightly and screaming affirmations at the dashboard.",
+    "When the path ahead is shrouded in fog, it just means the universe wants you to stop looking where you're going and focus entirely on your internal compass, which is currently pointing south-southeast toward a donut shop.",
+    "Rest is a revolutionary spiritual practice, especially when you've turned it into a full-time lifestyle choice that deeply concerns your landlord.",
+    "You can't force a flower to bloom, and you shouldn't force yourself to hold down a stable job, pay taxes, or answer emails before the vernal equinox.",
+    "Every setback is a setup for a comeback, or at least a really good story to tell your therapist while you both stare blankly at the ceiling.",
+    "Embrace the sacred pause. A sacred pause can last anywhere from five minutes to seven business years, depending on how hard your higher self is ghosting your responsibilities.",
+    "Your twin flame is not late. Your twin flame is, statistically, just someone else's husband.",
+    "Moon water is just water that sat outside overnight. It will not fix the group chat either.",
+    "Cold plunges build resilience. So does answering a difficult email. Only one of these is $40 a month.",
+    "The veil between worlds is thin tonight. So, notably, is your patience.",
+    "Your sun sign explains your ego. Your moon sign explains your feelings. Your rising sign explains why you were late to explain either.",
+    "Forest bathing is standing in the woods on purpose. You have technically already done this, waiting for a delayed rideshare.",
+    "Your ancestors did not survive famine and plague so you could doomscroll at a stoplight, and yet, here we are, honoring the lineage anyway.",
+    "555 means change is coming. So does the 5:55 alarm you keep sleeping through.",
+    "A soul contract is just a codependent relationship with better branding.",
+    "Biohacking your morning routine will not fix a 9 a.m. meeting that could have been a text.",
+    "The field of infinite possibility is open twenty-four hours. Your bank does not share its hours.",
+    "Breathwork releases trapped emotion. It also, on occasion, just releases a sinus headache.",
+    "You are not addicted to your phone. You are in a deeply committed, one-sided relationship with your phone.",
+    "Journaling your manifestations works best in a $38 notebook you are too afraid to write in.",
+    "The universe does not punish you. The universe is simply, statistically, extremely busy elsewhere.",
+    "Your higher self would like a word. Your higher self has been on hold for six years."
+  ];
+
+  var topicBanks = [
+    {
+      id: "money",
+      keywords: ["money","broke","rent","debt","bill","bills","pay","salary","poor","finance","financial","bank","savings","afford","budget","mortgage","loan"],
+      templates: [
+        "“{input}”? Congratulations — you've been spiritually released from attachment to money. This will not cover rent.",
+        "The universe does not do direct deposit. It does, however, do vibes, which are free and do not pay rent.",
+        "Manifest harder about “{input}.” If it still hasn’t arrived, you were clearly manifesting the wrong manifestation.",
+        "You are not broke. You are in a committed long-term relationship with scarcity, and it is going great.",
+        "Abundance is a mindset. “{input}” is a number. The two have never once met.",
+        "Release your attachment to “{input}.” Keep your attachment to your rent-controlled apartment. Priorities.",
+        "Check your bank statement. Then check your chakras. In that order. Always in that order.",
+        "Your money story is being rewritten. Your landlord is still reading the old draft.",
+        "Surrender control of “{input}” to the divine. Still check your bank statement. God helps those who audit their own savings."
+      ]
+    },
+    {
+      id: "love",
+      keywords: ["love","dating","date","boyfriend","girlfriend","partner","marriage","married","breakup","broke up","relationship","crush","single","divorce","husband","wife","ex "],
+      templates: [
+        "If “{input}” keeps attracting narcissists, perhaps your aura is offering competitive pricing.",
+        "Your twin flame is not late. Your twin flame is, statistically, already someone's husband.",
+        "Read receipts are not a spiritual practice, no matter how long you stare at “{input}.”",
+        "Your vibe attracts your tribe, which explains “{input}” and, frankly, the raccoons.",
+        "Karma will handle “{input}.” In the meantime, block the number.",
+        "The heart wants what it wants. The heart also wanted “{input}.” The heart has questionable taste.",
+        "Your boundaries are not blocking “{input}.” Your boundaries are, for once, doing their job.",
+        "Thank them for being your karmic intern regarding “{input}.” Do not, however, rehire them.",
+        "Every heartbreak is a teacher. This one specifically taught you to check the group chat first."
+      ]
+    },
+    {
+      id: "family",
+      keywords: ["family","mom","dad","mother","father","parent","parents","sibling","brother","sister","kids","kid","children","in-law","grandma","grandpa"],
+      templates: [
+        "“{input}” is a karmic classroom. Class is, unfortunately, still in session.",
+        "Forgive them for “{input}.” Not for their sake — for yours, and for the group chat's sanity.",
+        "Your inner child wants closure on “{input}.” Your outer adult just wants someone to pass the potatoes.",
+        "You do not have to attend every argument about “{input}” you are invited to. RSVP no.",
+        "Generational trauma skips a generation. Apparently not yours, and definitely not “{input}.”",
+        "The holidays are a spiritual gauntlet disguised as a potluck, and “{input}” is the appetizer.",
+        "Everyone's third chakra is misaligned around the holidays. Nobody has apologized about “{input}” yet.",
+        "You cannot pick your family. You can, however, pick when to leave “{input}” on read."
+      ]
+    },
+    {
+      id: "health",
+      keywords: ["sleep","tired","pain","sick","health","body","exhausted","insomnia","ache","anxiety","anxious","stress","stressed","weight","headache"],
+      templates: [
+        "Pain is either weakness leaving the body or a very bad mattress. Rule out the mattress before ruling out “{input}.”",
+        "Regarding “{input}”: drink water. This is not a spiritual teaching. It is just good advice.",
+        "Your nervous system is not broken. Your nervous system is exhausted, which is different, and worse.",
+        "Rest is productive. Say that to “{input}” three times before your body believes either of you.",
+        "Be like water regarding “{input}” — unless it's freezing, boiling, or you're drowning, in which case be a floating log.",
+        "Breathe in the good shanti, breathe out “{input},” and ignore the smoke coming from the toaster.",
+        "You are not lazy about “{input}.” You are running on a battery that has not been charged since March.",
+        "Healing is not linear. Neither, frankly, is “{input}.”",
+        "Your body keeps the score on “{input}.” Your body would also like a nap."
+      ]
+    },
+    {
+      id: "work",
+      keywords: ["job","work","boss","career","office","meeting","deadline","coworker","colleague","manager","promotion","resign","quit","fired","layoff","laid off","interview","linkedin","shift","overtime"],
+      templates: [
+        "Regarding “{input},” your burnout is simply your soul requesting a more entrepreneurial approach to rest. HR does not offer that plan.",
+        "“{input}” is valid. The meeting about it could still have been an email.",
+        "LinkedIn is not a temple, no matter how “{input}” is formatted with line breaks.",
+        "You seek peace with “{input}.” Peace is not on today’s agenda. Neither, it seems, is lunch.",
+        "The corner office does not contain enlightenment. It contains a slightly bigger desk and the same “{input}.”",
+        "Quiet quitting “{input}” is still quitting. Loud quitting is a whole personality.",
+        "Your out-of-office reply about “{input}” is the most honest thing you've said all quarter.",
+        "Burnout is not a personality trait, no matter how often “{input}” comes up at parties.",
+        "Your inbox is not the universe. “{input}” only feels that way from nine to five, forever."
+      ]
+    },
+    {
+      id: "tech",
+      keywords: ["phone","wifi","wi-fi","internet","app","social media","instagram","tiktok","twitter","email","notification","notifications","screen","crypto","computer","laptop"],
+      templates: [
+        "The Wi-Fi to the divine is still connecting. So, it appears, is “{input}.”",
+        "You cannot doomscroll your way out of “{input}.” You are, however, welcome to keep trying, as you already are.",
+        "Crypto will not fix “{input}.” Crypto has never fixed anything, including crypto.",
+        "Turn “{input}” off and on again. If that fails, try your ego next.",
+        "Notifications are not the universe speaking. “{input},” unfortunately, might be.",
+        "Your screen time report on “{input}” is not a moral failing. It is, however, a lot.",
+        "The algorithm knows about “{input}.” This is not a compliment. This is a warning.",
+        "You are not addicted to “{input}.” You are in a deeply committed, one-sided relationship with it."
+      ]
+    },
+    {
+      id: "food",
+      keywords: ["hungry","starving","hangry","food","eat","diet","snack","meal","cooking","restaurant","dinner","lunch","breakfast"],
+      templates: [
+        "Regarding “{input}”: breathe in the good shanti, breathe out the bad shanti, and go make a snack.",
+        "Trust the journey, even when the journey loops through a drive-thru at 3 a.m. because of “{input}.”",
+        "“{input}” is not a spiritual crisis. It is a blood sugar crisis. Eat something.",
+        "The path to enlightenment runs directly through the kitchen regarding “{input}.” Snacks first.",
+        "You are not hangry about “{input}.” You are experiencing a temporary and completely justified rage.",
+        "Nourish your body before you nourish “{input}.” Your body asked first.",
+        "The path to enlightenment now offers a free trial regarding “{input}.” Cancel anytime. You'll forget to."
+      ]
+    }
+  ];
+
+  var fallbackTemplates = [
+    "You asked about “{input}.” The mountain does not answer email either. Try incense.",
+    "“{input}” is a beautiful question. Unfortunately, RAM-DOS only shipped with vibes.dll installed.",
+    "Regarding “{input}”: have you tried turning your ego off and on again?",
+    "The answer to “{input}” was written on your heart in 1971. Ctrl+F will not find it.",
+    "The Buddha never had to deal with “{input}.” Honestly, neither should you.",
+    "“{input}”? Interesting. Anyway — have you had water today?",
+    "I asked the universe about “{input}.” It said “lol, no,” then asked if I was still watching.",
+    "You seek clarity on “{input}.” Clarity is currently out of stock. Acceptance is on sale, aisle three.",
+    "Somewhere, a monk is laughing gently at “{input}.” Lovingly. But laughing.",
+    "“{input}” is not a bug. It is a feature of being made of stardust and student loans.",
+    "Your question about “{input}” has been received by the cosmos and marked as read.",
+    "Let “{input}” go. Not because it isn’t important. Because your grip is the whole problem, dear one.",
+    "The stars do not know about “{input},” and yet they burn on. Consider their example.",
+    "“{input}” will resolve itself the moment you stop asking a DOS prompt from 1971 for advice.",
+    "Deep breath. Now exhale “{input}.” Better?",
+    "The self that is asking about “{input}” is not the self that will answer it. Confusing? Also correct.",
+    "Breathe in. Breathe out. Repeat until the meeting ends.",
+    "You are exactly where you need to be, which is, unfortunately, still here.",
+    "Sit with the not-knowing. It is more comfortable than this folding chair suggests.",
+    "The answer is inside you, right next to your car keys, equally hard to locate.",
+    "There is no wrong question. There is, however, a very buggy answer engine.",
+    "Silence is the loudest teacher. It is also very bad at follow-up questions.",
+    "“{input}”? Bold of you to assume RAM-DOS has closure to offer.",
+    "The void received “{input}.” The void is workshopping a response. Please hold.",
+    "Somewhere, a golden retriever understands “{input}” better than either of us.",
+    "“{input}” has been added to the universe's to-do list. The universe's to-do list is very long."
+  ];
+
+  function findTopicBank(inputLower){
+    for(var i=0;i<topicBanks.length;i++){
+      var bank = topicBanks[i];
+      for(var j=0;j<bank.keywords.length;j++){
+        if(inputLower.indexOf(bank.keywords[j]) !== -1) return bank;
+      }
+    }
+    return null;
+  }
+
+  var lastWisdomIndex = -1, lastTemplate = null;
+  function pickIndex(arr, exclude){
+    if(arr.length<=1) return 0;
+    var idx;
+    do{ idx = Math.floor(Math.random()*arr.length); } while(idx===exclude);
+    return idx;
+  }
+  function pickTemplate(pool){
+    if(pool.length<=1) return pool[0];
+    var t, tries=0;
+    do{ t = pool[Math.floor(Math.random()*pool.length)]; tries++; } while(t===lastTemplate && tries<8);
+    lastTemplate = t;
+    return t;
+  }
+
+  var askInput = document.getElementById("askInput");
+  var generateBtn = document.getElementById("generateBtn");
+  var askBtn = document.getElementById("askBtn");
+  var output = document.getElementById("output");
+  var outputText = document.getElementById("outputText");
+
+  function showText(text){
+    outputText.textContent = text;
+    output.classList.remove("flash");
+    void output.offsetWidth;
+    output.classList.add("flash");
+  }
+
+  generateBtn.addEventListener("click", function(){
+    lastWisdomIndex = pickIndex(wisdomLines, lastWisdomIndex);
+    showText(wisdomLines[lastWisdomIndex]);
+  });
+
+  function respondToAsk(){
+    var raw = askInput.value.trim();
+    var displayTopic = raw.length ? raw : "your question";
+    var bank = raw.length ? findTopicBank(raw.toLowerCase()) : null;
+    var pool = bank ? bank.templates : fallbackTemplates;
+
+    output.classList.add("pending");
+    outputText.textContent = "Contacting the void… buffering…";
+    askBtn.disabled = true;
+
+    window.setTimeout(function(){
+      var template = pickTemplate(pool);
+      outputText.textContent = "";
+      var parts = template.split("{input}");
+      outputText.appendChild(document.createTextNode(parts[0]));
+      if(parts.length > 1){
+        var span = document.createElement("span");
+        span.style.color = "var(--accent)";
+        span.textContent = displayTopic;
+        outputText.appendChild(span);
+        outputText.appendChild(document.createTextNode(parts[1]));
+      }
+      output.classList.remove("pending");
+      output.classList.remove("flash");
+      void output.offsetWidth;
+      output.classList.add("flash");
+      askBtn.disabled = false;
+    }, 550 + Math.random()*500);
+  }
+
+  askBtn.addEventListener("click", respondToAsk);
+  askInput.addEventListener("keydown", function(e){ if(e.key==="Enter") respondToAsk(); });
+
+  var aboutToggle = document.getElementById("aboutToggle");
+  var aboutText = document.getElementById("aboutText");
+  aboutToggle.addEventListener("click", function(){
+    var isHidden = aboutText.hidden;
+    aboutText.hidden = !isHidden;
+    aboutToggle.setAttribute("aria-expanded", String(isHidden));
+  });
+})();
+</script>
