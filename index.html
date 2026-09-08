@@ -1,4 +1,10 @@
-<title>RAM-DOS Green Terminal</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAM-DOS</title>
+<meta name="description" content="A tongue-in-cheek spiritual operating system that generates absurd, profound-sounding wisdom on demand.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap">
 <style>
@@ -142,6 +148,8 @@
   .about-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   .footer-mini p{ margin:0.6rem 0 0; font-family:'Space Mono', monospace; font-size:0.62rem; line-height:1.5; color:var(--ink-dim); opacity:0.85; }
 </style>
+</head>
+<body>
 
 <div class="page">
   <svg class="eye" viewBox="0 0 200 160" role="img" aria-label="A simple line-drawn eye, watching, monochrome">
@@ -158,7 +166,7 @@
   <h1>RAM-DOS<span class="cursor-inline">&nbsp;</span></h1>
   <p class="tagline">third eye subsystem</p>
 
-  <input id="askInput" type="text" class="search-bar" maxlength="140" placeholder="ask the guru anything (optional)" />
+  <input id="askInput" type="text" class="search-bar" maxlength="140" placeholder="ask the guru (optional)" />
 
   <div class="btn-row">
     <button id="generateBtn" class="btn-flat primary">Generate Wisdom</button>
@@ -607,3 +615,5 @@
   });
 })();
 </script>
+</body>
+</html>
